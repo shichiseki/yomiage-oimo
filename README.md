@@ -1,6 +1,15 @@
 # yomiage-oimo
 サーバー上に投稿されたメッセージをボイスチャンネル内で読み上げるDiscordbotです。
 
+# TODO
+- 読み上げ機能の移植
+- flakeのworkflows
+- fly.ioのworkflows
+
+# 行ったこと
+## 2023/5/20
+- 音声再生をファイルを保存する方式に変更
+
 # 開発用メモ
 ## requirementsの書き方
 
