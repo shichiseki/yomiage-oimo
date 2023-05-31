@@ -3,7 +3,40 @@ import discord
 from dotenv import load_dotenv
 import logging
 from gtts import gTTS
-import discord
+import random
+import asyncio
+
+
+class MyClient(discord.Client):
+    async def on_ready(self):
+        self.voice_client_dict: dict[int, discord.VoiceProtocol] = {}
+        logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
+
+    async def on_message(self, message: discord.Message):
+        # we do not want the bot to reply to itself
+        if message.author.id == self.user.id:
+            return
+
+        if message.content.startswith("$"):
+            if message.content[1:] == "connect":
+                if message.author.guild.id not in self.voice_client_dict:
+                    self.voice_client_dict[message.author.guild.id] = await message.author.voice.channel.connect()
+
+                filename = "audio.wav"
+
+                text = "Hello World!"
+
+                # get audio from server
+                tts = gTTS(text=text, lang="ja")
+                tts.save(filename)
+
+                # source = discord.FFmpegOpusAudio(filename)
+                source = discord.FFmpegPCMAudio(filename)
+                logger.info("play sound")
+                self.voice_client_dict[message.author.guild.id].play(source)
+
+            if message.content[1:] == "disconnect":
+                await self.voice_client_dict[message.author.guild.id].disconnect()
 
 
 # .envファイルの読み込み(デバッグ環境のみ)
@@ -14,37 +47,8 @@ load_dotenv(".env")
 intents = discord.Intents.default()
 intents.message_content = True
 
-client = discord.Client(intents=intents)
+discord.utils.setup_logging(formatter=logging.Formatter("%(asctime)s %(levelname)s %(filename)s\t%(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+logger = logging.getLogger("test")
 
-
-@client.event
-async def on_ready():
-    logging.info(f"login as {client.user}")
-
-
-@client.event
-async def on_message(message: discord.Message):
-    if message.author == client.user:
-        return
-
-    if message.content.startswith("$"):
-        if message.content[1:] == "connect":
-            voice_client = await message.author.voice.channel.connect()
-
-            filename = "audio.wav"
-
-            text = "Hello World!"
-
-            # get audio from server
-            tts = gTTS(text=text, lang="ja")
-            tts.save(filename)
-
-            source = discord.FFmpegOpusAudio(filename)
-            voice_client.play(source)
-
-        if message.content[1:] == "disconnect":
-            voice_client = [voice for voice in client.voice_clients if message.author.voice.channel == voice.channel][0]
-            await voice_client.disconnect()
-
-
-client.run(os.environ["BOT_TOKEN"], root_logger=True)
+client = MyClient(intents=intents)
+client.run(os.environ["BOT_TOKEN"], log_handler=None)
